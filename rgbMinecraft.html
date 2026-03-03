@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft RGB Studio</title>
+    <style>
+        :root { --accent: #00ffaa; --bg: #121212; --card: #1e1e1e; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); width: 100%; max-width: 600px; border: 1px solid #333; }
+        h1 { text-align: center; color: var(--accent); margin-bottom: 20px; }
+        
+        label { display: block; margin: 10px 0 5px; font-size: 0.9rem; color: #aaa; }
+        input[type="text"], select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: #fff; box-sizing: border-box; }
+        
+        .colors-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        .color-input { width: 100%; height: 40px; border: none; border-radius: 5px; cursor: pointer; background: none; }
+        
+        .options { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+        .opt-btn { background: #333; border: 1px solid #444; color: #fff; padding: 8px 15px; border-radius: 5px; cursor: pointer; flex: 1; text-align: center; }
+        .opt-btn.active { background: var(--accent); color: #000; font-weight: bold; }
+
+        #preview { background: #000; padding: 20px; border-radius: 8px; min-height: 40px; margin: 20px 0; text-align: center; font-size: 1.5rem; border: 1px dashed var(--accent); word-wrap: break-word; }
+        
+        .output-box { position: relative; }
+        #output { width: 100%; height: 80px; background: #111; color: #00ff00; padding: 10px; border-radius: 5px; border: 1px solid #444; font-family: monospace; resize: none; margin-top: 10px; box-sizing: border-box; }
+        .copy-btn { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .copy-btn:hover { transform: scale(1.02); opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>⛏️ RGB STUDIO</h1>
+
+    <label>Текст сообщения:</label>
+    <input type="text" id="inputText" placeholder="Введите текст..." oninput="generate()">
+
+    <label>Количество цветов (2-6):</label>
+    <select id="colorCount" onchange="toggleColorInputs()">
+        <option value="2">2 Цвета</option>
+        <option value="3">3 Цвета</option>
+        <option value="4">4 Цвета</option>
+        <option value="5">5 Цвета</option>
+        <option value="6">6 Цветов</option>
+    </select>
+
+    <div class="colors-grid" id="colorsContainer">
+        <input type="color" class="color-input" value="#ff0000" oninput="generate()">
+        <input type="color" class="color-input" value="#0000ff" oninput="generate()">
+    </div>
+
+    <label>Формат кода:</label>
+    <select id="format" onchange="generate()">
+        <option value="hex">&#RRGGBB (Bungee/Cmi)</option>
+        <option value="legacy">&x&r&r&g&g&b&b (Legacy RGB)</option>
+        <option value="minimessage"><gradient> (MiniMessage)</option>
+    </select>
+
+    <div class="options">
+        <div class="opt-btn" id="bold" onclick="toggleStyle('bold')">B</div>
+        <div class="opt-btn" id="italic" onclick="toggleStyle('italic')">I</div>
+        <div class="opt-btn" id="underline" onclick="toggleStyle('underline')">U</div>
+        <div class="opt-btn" id="strike" onclick="toggleStyle('strike')">S</div>
+    </div>
+
+    <div id="preview">Превью</div>
+
+    <div class="output-box">
+        <textarea id="output" readonly></textarea>
+        <button class="copy-btn" onclick="copyResult()">СКОПИРОВАТЬ КОД</button>
+    </div>
+</div>
+
+<script>
+    let styles = { bold: false, italic: false, underline: false, strike: false };
+
+    function toggleStyle(s) {
+        styles[s] = !styles[s];
+        document.getElementById(s).classList.toggle('active');
+        generate();
+    }
+
+    function toggleColorInputs() {
+        const count = document.getElementById('colorCount').value;
+        const container = document.getElementById('colorsContainer');
+        const currentInputs = container.querySelectorAll('input').length;
+        
+        if (count > currentInputs) {
+            for (let i = 0; i < count - currentInputs; i++) {
+                let inp = document.createElement('input');
+                inp.type = 'color';
+                inp.className = 'color-input';
+                inp.value = '#' + Math.floor(Math.random()*16777215).toString(16);
+                inp.oninput = generate;
+                container.appendChild(inp);
+            }
+        } else {
+            for (let i = 0; i < currentInputs - count; i++) {
+                container.lastChild.remove();
+            }
+        }
+        generate();
+    }
+
+    function hexToRgb(hex) {
+        return hex.replace(/^#/, '').match(/.{2}/g).map(x => parseInt(x, 16));
+    }
+
+    function interpolateColors(colors, steps) {
+        let result = [];
+        let segments = colors.length - 1;
+        let stepsPerSegment = steps / segments;
+
+        for (let i = 0; i < steps; i++) {
+            let segment = Math.min(Math.floor(i / stepsPerSegment), segments - 1);
+            let percent = (i % stepsPerSegment) / stepsPerSegment;
+            
+            let color1 = hexToRgb(colors[segment]);
+            let color2 = hexToRgb(colors[segment + 1]);
+            
+            let r = Math.round(color1[0] + (color2[0] - color1[0]) * percent);
+            let g = Math.round(color1[1] + (color2[1] - color1[1]) * percent);
+            let b = Math.round(color1[2] + (color2[2] - color1[2]) * percent);
+            
+            result.push([r, g, b]);
+        }
+        return result;
+    }
+
+    function generate() {
+        const text = document.getElementById('inputText').value || "Пример";
+        const format = document.getElementById('format').value;
+        const colorInputs = document.querySelectorAll('.color-input');
+        const colors = Array.from(colorInputs).map(i => i.value);
+        
+        const rgbList = interpolateColors(colors, text.length);
+        let output = "";
+        let previewHtml = "";
+
+        // Стили
+        let stylePrefix = "";
+        if (styles.bold) stylePrefix += "&l";
+        if (styles.italic) stylePrefix += "&o";
+        if (styles.underline) stylePrefix += "&n";
+        if (styles.strike) stylePrefix += "&m";
+
+        for (let i = 0; i < text.length; i++) {
+            let r = rgbList[i][0], g = rgbList[i][1], b = rgbList[i][2];
+            let hex = [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            
+            // Форматирование
+            if (format === 'hex') {
+                output += `&#${hex}${stylePrefix}${text[i]}`;
+            } else if (format === 'legacy') {
+                let legacy = hex.split('').map(c => `&${c}`).join('');
+                output += `&x${legacy}${stylePrefix}${text[i]}`;
+            } else if (format === 'minimessage') {
+                // Упрощенный вариант для примера
+                if(i===0) output += `<gradient:${colors.join(':')}>`;
+                output += text[i];
+                if(i===text.length-1) output += `</gradient>`;
+            }
+
+            previewHtml += `<span style="color:#${hex}; 
+                font-weight:${styles.bold?'bold':'normal'};
+                font-style:${styles.italic?'italic':'normal'};
+                text-decoration:${(styles.underline?'underline ':'') + (styles.strike?'line-through':'')}">
+                ${text[i]}</span>`;
+        }
+
+        document.getElementById('preview').innerHTML = previewHtml;
+        document.getElementById('output').value = output;
+    }
+
+    function copyResult() {
+        const copyText = document.getElementById("output");
+        copyText.select();
+        document.execCommand("copy");
+        alert("Код скопирован! Вставляй в Minecraft :)");
+    }
+
+    generate();
+</script>
+
+</body>
+</html>
