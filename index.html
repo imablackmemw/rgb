@@ -33,16 +33,16 @@
 <div class="container">
     <h1>⛏️ RGB STUDIO</h1>
 
-    <label>Текст сообщения:</label>
-    <input type="text" id="inputText" placeholder="Введите текст..." oninput="generate()">
+    <label>message text:</label>
+    <input type="text" id="inputText" placeholder="type a text..." oninput="generate()">
 
-    <label>Количество цветов (2-6):</label>
+    <label>colors (2-6):</label>
     <select id="colorCount" onchange="toggleColorInputs()">
-        <option value="2">2 Цвета</option>
-        <option value="3">3 Цвета</option>
-        <option value="4">4 Цвета</option>
-        <option value="5">5 Цвета</option>
-        <option value="6">6 Цветов</option>
+        <option value="2">2 colors</option>
+        <option value="3">3 colors</option>
+        <option value="4">4 colors</option>
+        <option value="5">5 colors</option>
+        <option value="6">6 colors</option>
     </select>
 
     <div class="colors-grid" id="colorsContainer">
@@ -50,7 +50,7 @@
         <input type="color" class="color-input" value="#0000ff" oninput="generate()">
     </div>
 
-    <label>Формат кода:</label>
+    <label>code format:</label>
     <select id="format" onchange="generate()">
         <option value="hex">&#RRGGBB (Bungee/Cmi)</option>
         <option value="legacy">&x&r&r&g&g&b&b (Legacy RGB)</option>
@@ -64,11 +64,11 @@
         <div class="opt-btn" id="strike" onclick="toggleStyle('strike')">S</div>
     </div>
 
-    <div id="preview">Превью</div>
+    <div id="preview">preview</div>
 
     <div class="output-box">
         <textarea id="output" readonly></textarea>
-        <button class="copy-btn" onclick="copyResult()">СКОПИРОВАТЬ КОД</button>
+        <button class="copy-btn" onclick="copyResult()">copy code</button>
     </div>
 </div>
 
@@ -129,7 +129,7 @@
     }
 
     function generate() {
-        const text = document.getElementById('inputText').value || "Пример";
+        const text = document.getElementById('inputText').value || "ImAblackMemw";
         const format = document.getElementById('format').value;
         const colorInputs = document.querySelectorAll('.color-input');
         const colors = Array.from(colorInputs).map(i => i.value);
@@ -177,7 +177,7 @@
         const copyText = document.getElementById("output");
         copyText.select();
         document.execCommand("copy");
-        alert("Код скопирован! Вставляй в Minecraft :)");
+        alert("code copied! paste it in minecraft :)");
     }
 
     generate();
